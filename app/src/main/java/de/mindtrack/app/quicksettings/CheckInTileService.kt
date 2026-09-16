@@ -30,24 +30,27 @@ class CheckInTileService : TileService() {
             )
         }
 
-        // The quick-capture activity contains no history or private summaries and is
-        // deliberately safe to show above the lock screen.
-        if (isLocked) {
-            startActivity(intent)
-            return
+        fun launchCapture() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val pendingIntent = PendingIntent.getActivity(
+                    this,
+                    1001,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                startActivityAndCollapse(pendingIntent)
+            } else {
+                @Suppress("DEPRECATION")
+                startActivityAndCollapse(intent)
+            }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val pendingIntent = PendingIntent.getActivity(
-                this,
-                1001,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            startActivityAndCollapse(pendingIntent)
+        // On secure lock screens some OEMs block direct activity launches from tiles.
+        // Asking the system to unlock first is more reliable than silently failing.
+        if (isLocked && isSecure) {
+            unlockAndRun { launchCapture() }
         } else {
-            @Suppress("DEPRECATION")
-            startActivityAndCollapse(intent)
+            launchCapture()
         }
     }
 }

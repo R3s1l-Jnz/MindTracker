@@ -28,7 +28,7 @@ object QuickSettingsTileHelper {
         statusBarManager.requestAddTileService(
             ComponentName(activity, CheckInTileService::class.java),
             activity.getString(R.string.quick_tile_label),
-            Icon.createWithResource(activity, R.drawable.ic_quick_capture),
+            Icon.createWithResource(activity, R.drawable.ic_launcher_monochrome),
             activity.mainExecutor
         ) { result ->
             val message = when (result) {

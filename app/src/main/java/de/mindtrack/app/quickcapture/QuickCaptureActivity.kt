@@ -43,6 +43,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +66,16 @@ import kotlinx.coroutines.launch
 private val FallbackQuickContextTags = listOf("Arbeit", "Gespräch", "Hunger", "Reizüberflutung", "Bewegung", "Skill")
 
 class QuickCaptureActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_DIMENSION = "quick_dimension"
+        const val EXTRA_EVENT_TYPE = "quick_event_type"
+        const val EXTRA_LEVEL = "quick_level"
+        const val EVENT_LEVEL = "level"
+        const val EVENT_BREAKDOWN = "breakdown"
+        const val EVENT_INCREASE = "increase"
+        const val EVENT_DECREASE = "decrease"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -79,6 +90,7 @@ class QuickCaptureActivity : ComponentActivity() {
         val repository = (application as MindTrackApplication).repository
         val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
         val allowPersonalTags = !keyguardManager.isDeviceLocked
+        val initialPreset = QuickCapturePreset.fromIntent(intent)
 
         setContent {
             MindTrackTheme {
@@ -86,6 +98,7 @@ class QuickCaptureActivity : ComponentActivity() {
                     QuickCaptureScreen(
                         repository = repository,
                         allowPersonalTags = allowPersonalTags,
+                        initialPreset = initialPreset,
                         onClose = { finish() }
                     )
                 }
@@ -94,10 +107,30 @@ class QuickCaptureActivity : ComponentActivity() {
     }
 }
 
+private data class QuickCapturePreset(
+    val dimension: TrackingDimension,
+    val eventType: String,
+    val level: Int? = null
+) {
+    companion object {
+        fun fromIntent(intent: android.content.Intent): QuickCapturePreset? {
+            val dimension = when (intent.getStringExtra(QuickCaptureActivity.EXTRA_DIMENSION)) {
+                TrackingDimension.ENERGY.name -> TrackingDimension.ENERGY
+                TrackingDimension.TENSION.name -> TrackingDimension.TENSION
+                else -> return null
+            }
+            val eventType = intent.getStringExtra(QuickCaptureActivity.EXTRA_EVENT_TYPE) ?: return null
+            val level = intent.getIntExtra(QuickCaptureActivity.EXTRA_LEVEL, -1).takeIf { it in 1..5 }
+            return QuickCapturePreset(dimension, eventType, level)
+        }
+    }
+}
+
 @Composable
 private fun QuickCaptureScreen(
     repository: TrackingRepository,
     allowPersonalTags: Boolean,
+    initialPreset: QuickCapturePreset?,
     onClose: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -106,6 +139,7 @@ private fun QuickCaptureScreen(
     var selectedTags by remember { mutableStateOf(setOf<String>()) }
     var note by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
+    var presetHandled by remember { mutableStateOf(false) }
     val storedTags by repository.contextTags.collectAsState(initial = emptyList())
     val availableTags = if (allowPersonalTags) storedTags.map { it.name }.ifEmpty { FallbackQuickContextTags } else FallbackQuickContextTags
 
@@ -141,6 +175,33 @@ private fun QuickCaptureScreen(
         scope.launch {
             val id = repository.recordChange(dimension, increase)
             afterSaved(id, "${dimension.label()} ${if (increase) "+" else "−"}")
+        }
+    }
+
+    LaunchedEffect(initialPreset) {
+        val preset = initialPreset
+        if (preset != null && !presetHandled) {
+            presetHandled = true
+            saving = true
+            when (preset.eventType) {
+                QuickCaptureActivity.EVENT_LEVEL -> preset.level?.let { level ->
+                    val id = repository.recordLevel(preset.dimension, level)
+                    afterSaved(id, "${preset.dimension.label()} $level")
+                }
+                QuickCaptureActivity.EVENT_BREAKDOWN -> {
+                    val id = repository.recordBreakdown(preset.dimension)
+                    afterSaved(id, "${preset.dimension.label()} · Breakdown")
+                }
+                QuickCaptureActivity.EVENT_INCREASE -> {
+                    val id = repository.recordChange(preset.dimension, true)
+                    afterSaved(id, "${preset.dimension.label()} +")
+                }
+                QuickCaptureActivity.EVENT_DECREASE -> {
+                    val id = repository.recordChange(preset.dimension, false)
+                    afterSaved(id, "${preset.dimension.label()} −")
+                }
+                else -> saving = false
+            }
         }
     }
 

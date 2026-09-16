@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">MindTrack</string>
     <string name="quick_tile_label">MindTrack Check-in</string>
+    <string name="widget_description">Energie, Anspannung und Veränderungen schnell erfassen</string>
 </resources>

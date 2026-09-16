@@ -1,8 +1,17 @@
-# MindTrack – Android MVP 0.3
+# MindTrack – Android MVP 0.3.2
 
 Android-first prototype for fast tracking of **energy** and **tension**, plus a personal skills toolbox and discovery notebook.
 
-## New in MVP 0.3
+## New in MVP 0.3.2
+
+- Skill selections now have a high-contrast selected state: checkmark, thicker border, stronger fill, and bolder text.
+- Added a home-screen widget with direct `B / 1–5` capture for energy and tension plus all four `+/−` actions.
+- Widget taps save immediately and then open Quick Capture for optional context.
+- Added in-app widget pinning on supported launchers (Android 8+).
+- Quick Settings tile launch is more robust: on secure lock screens it requests unlock instead of silently failing on OEMs that block direct activity launch.
+- Version bumped to `0.3.2`.
+
+## Included since MVP 0.3
 
 - **45 prefilled skills / strategies** grouped by type
   - DBT · Achtsamkeit
@@ -41,6 +50,7 @@ Android-first prototype for fast tracking of **energy** and **tension**, plus a 
 - Context is optional and attached after the event has already been saved
 - Shared local timeline
 - Quick Capture activity
+- Home-screen widget: direct level and `+/−` capture
 - Android Quick Settings Tile: `MindTrack Check-in`
 - Android 13+ native "Add Quick Settings tile" request
 
@@ -97,7 +107,7 @@ Quick Capture is designed for lock-screen use and does not expose history, old n
 1. Extract the ZIP.
 2. Open the `MindTrackAndroid` folder in Android Studio.
 3. Let Android Studio run Gradle sync.
-4. Configure Gradle 8.13+ if your local setup does not already provide it.
+4. Use Gradle 8.13 for AGP 8.13.x (the included GitHub Actions workflow already does this).
 5. Install Android SDK 36 if requested.
 6. Run on an emulator or physical Android device.
 
@@ -113,13 +123,20 @@ Quick Capture is designed for lock-screen use and does not expose history, old n
 8. Open Quick Capture while unlocked → personal tags are available.
 9. Open Quick Capture over the lock screen → only generic tags are shown.
 10. Tap `B` → it remains Breakdown, not level 0.
+11. Add the MindTrack widget → tap a level → the event is saved and Quick Capture opens for optional context.
+12. Toggle `Ausprobiert`, `Hilft`, or a tension level → selected chips show a visible checkmark and thick outline.
 
 ## Still intentionally out of scope
 
 - Scheduled notification check-ins
-- Home-screen / lock-screen widget
 - Charts and pattern analysis
 - Import/export
 - Optional encryption layer beyond Android app sandbox / device encryption
 - Cloud sync
 - Therapist-facing export
+
+## 0.3.2 UI polish
+
+- Neues adaptives Batterie-App-Icon inklusive Android-13-Monochrom-Variante.
+- Bottom-Navigation sitzt jetzt bündig am unteren Systemrand; das doppelte Navigation-Bar-Inset wurde entfernt.
+- Dezente Trennlinie und ruhige Surface-Farbe für klarere Abgrenzung zum Inhalt.

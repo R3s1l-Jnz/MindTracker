@@ -4,11 +4,13 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
 }
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget("17")
     }
 }
+
 android {
     namespace = "de.mindtrack.app"
     compileSdk = 36
@@ -17,8 +19,8 @@ android {
         applicationId = "de.mindtrack.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 5
+        versionName = "0.3.2"
     }
 
     buildTypes {
@@ -36,7 +38,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-       buildFeatures {
+
+    buildFeatures {
         compose = true
     }
 }

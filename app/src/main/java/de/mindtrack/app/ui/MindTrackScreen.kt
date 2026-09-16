@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -79,6 +79,7 @@ import de.mindtrack.app.quicksettings.QuickSettingsTileHelper
 import de.mindtrack.app.ui.components.BatteryIndicator
 import de.mindtrack.app.ui.components.TensionBars
 import de.mindtrack.app.ui.theme.TrackerColors
+import de.mindtrack.app.widget.MindTrackWidgetHelper
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -100,7 +101,12 @@ fun MindTrackScreen(viewModel: TrackerViewModel) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(modifier = Modifier.navigationBarsPadding()) {
+            Column {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 0.dp
+                ) {
                 NavigationBarItem(
                     selected = tab == MainTab.TODAY,
                     onClick = { tab = MainTab.TODAY },
@@ -125,6 +131,7 @@ fun MindTrackScreen(viewModel: TrackerViewModel) {
                     icon = { Icon(Icons.Outlined.History, contentDescription = null) },
                     label = { Text("Verlauf") }
                 )
+                }
             }
         }
     ) { padding ->
@@ -161,6 +168,14 @@ fun MindTrackScreen(viewModel: TrackerViewModel) {
                         QuickSettingsTileHelper.requestAddTile(activity) { tileMessage = it }
                     } else {
                         tileMessage = "Füge „MindTrack Check-in“ über Bearbeiten in den Schnelleinstellungen hinzu."
+                    }
+                },
+                onAddWidget = {
+                    val activity = context as? Activity
+                    tileMessage = if (activity != null) {
+                        MindTrackWidgetHelper.requestPin(activity)
+                    } else {
+                        "Öffne die Widget-Auswahl deines Launchers und füge MindTrack hinzu."
                     }
                 }
             )
@@ -211,7 +226,8 @@ private fun TodayScreen(
     onUseSkill: (SkillEntity) -> Unit,
     tileMessage: String?,
     onOpenQuickCapture: () -> Unit,
-    onAddQuickTile: () -> Unit
+    onAddQuickTile: () -> Unit,
+    onAddWidget: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -285,11 +301,10 @@ private fun TodayScreen(
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Android Schnellzugriff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text("Teste den reduzierten Capture-Screen oder füge die Quick-Settings-Kachel hinzu.")
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = onOpenQuickCapture) { Text("Quick Capture") }
-                        Button(onClick = onAddQuickTile) { Text("Kachel hinzufügen") }
-                    }
+                    Text("Das Widget ist der primäre Schnellzugriff; die Quick-Settings-Kachel bleibt als Zusatzweg.")
+                    Button(onClick = onAddWidget, modifier = Modifier.fillMaxWidth()) { Text("Widget hinzufügen") }
+                    OutlinedButton(onClick = onOpenQuickCapture, modifier = Modifier.fillMaxWidth()) { Text("Quick Capture testen") }
+                    OutlinedButton(onClick = onAddQuickTile, modifier = Modifier.fillMaxWidth()) { Text("Quick-Settings-Kachel hinzufügen") }
                     tileMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
@@ -463,8 +478,8 @@ private fun SkillsScreen(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = tab == SkillTab.TOOLBOX, onClick = { tab = SkillTab.TOOLBOX }, label = { Text("Meine Box") })
-                FilterChip(selected = tab == SkillTab.LIBRARY, onClick = { tab = SkillTab.LIBRARY }, label = { Text("Bibliothek") })
+                StrongChoiceChip("Meine Box", tab == SkillTab.TOOLBOX) { tab = SkillTab.TOOLBOX }
+                StrongChoiceChip("Bibliothek", tab == SkillTab.LIBRARY) { tab = SkillTab.LIBRARY }
             }
         }
 
@@ -472,10 +487,10 @@ private fun SkillsScreen(
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     TensionFilter.entries.forEach { filter ->
-                        FilterChip(
+                        StrongChoiceChip(
+                            label = filter.label(),
                             selected = tensionFilter == filter,
-                            onClick = { tensionFilter = filter },
-                            label = { Text(filter.label()) }
+                            onClick = { tensionFilter = filter }
                         )
                     }
                 }
@@ -527,7 +542,7 @@ private fun SkillsScreen(
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     categories.forEach { item ->
-                        FilterChip(selected = category == item, onClick = { category = item }, label = { Text(item) })
+                        StrongChoiceChip(item, category == item) { category = item }
                     }
                 }
             }
@@ -601,20 +616,61 @@ private fun SkillLibraryCard(
             }
             Text(skill.description, style = MaterialTheme.typography.bodyMedium)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = skill.tried, onClick = onTried, label = { Text("Ausprobiert") })
-                FilterChip(selected = skill.helpful, onClick = onHelpful, label = { Text("Hilft") })
+                StrongChoiceChip("Ausprobiert", skill.tried, onTried)
+                StrongChoiceChip("Hilft", skill.helpful, onHelpful)
             }
             Text("Passend bei Anspannung", style = MaterialTheme.typography.labelMedium)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = skill.tensionLow, onClick = { onToggleLevel("low") }, label = { Text("Niedrig") })
-                FilterChip(selected = skill.tensionMedium, onClick = { onToggleLevel("medium") }, label = { Text("Mittel") })
-                FilterChip(selected = skill.tensionHigh, onClick = { onToggleLevel("high") }, label = { Text("Hoch") })
-                FilterChip(selected = skill.tensionBreakdown, onClick = { onToggleLevel("breakdown") }, label = { Text("B") })
+                StrongChoiceChip("Niedrig", skill.tensionLow) { onToggleLevel("low") }
+                StrongChoiceChip("Mittel", skill.tensionMedium) { onToggleLevel("medium") }
+                StrongChoiceChip("Hoch", skill.tensionHigh) { onToggleLevel("high") }
+                StrongChoiceChip("B", skill.tensionBreakdown) { onToggleLevel("breakdown") }
             }
             Button(onClick = onToolbox, modifier = Modifier.fillMaxWidth()) {
                 Text(if (skill.inToolbox) "Aus meiner Box entfernen" else "+ In meine Box")
             }
         }
+    }
+}
+
+@Composable
+private fun StrongChoiceChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val shape = RoundedCornerShape(999.dp)
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(
+                if (selected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+            )
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) accent else MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
+                shape = shape
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        if (selected) {
+            Icon(
+                Icons.Outlined.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+        Text(
+            label,
+            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+        )
     }
 }
 

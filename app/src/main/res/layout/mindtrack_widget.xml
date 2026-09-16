@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="@drawable/widget_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/widget_energy_label"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="🔋"
+            android:textSize="20sp"
+            android:contentDescription="Energie erfassen" />
+        <TextView android:id="@+id/widget_energy_b" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_breakdown" android:text="B" android:textColor="#F2CD46" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_energy_1" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_red" android:text="1" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_energy_2" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_orange" android:text="2" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_energy_3" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_yellow" android:text="3" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_energy_4" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_light_green" android:text="4" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_energy_5" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_green" android:text="5" android:textColor="#171717" android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/widget_tension_label"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="🔥"
+            android:textSize="20sp"
+            android:contentDescription="Anspannung erfassen" />
+        <TextView android:id="@+id/widget_tension_b" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_breakdown" android:text="B" android:textColor="#F2CD46" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_tension_1" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_green" android:text="1" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_tension_2" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_light_green" android:text="2" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_tension_3" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_yellow" android:text="3" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_tension_4" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_orange" android:text="4" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_tension_5" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_level_red" android:text="5" android:textColor="#171717" android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView android:id="@+id/widget_energy_plus" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_action" android:text="🔋 +" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_energy_minus" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_action" android:text="🔋 −" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_tension_plus" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_action" android:text="🔥 +" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_tension_minus" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_action" android:text="🔥 −" android:textColor="#171717" android:textStyle="bold" />
+        <TextView android:id="@+id/widget_open" android:layout_width="38dp" android:layout_height="34dp" android:layout_margin="2dp" android:gravity="center" android:background="@drawable/widget_action" android:text="⋯" android:textColor="#171717" android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>
