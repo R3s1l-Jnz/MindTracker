@@ -1,0 +1,216 @@
+diff --git a/.github/workflows/build-apk.yml b/.github/workflows/build-apk.yml
+index 8b9d9e0..43d6eeb 100644
+--- a/.github/workflows/build-apk.yml
++++ b/.github/workflows/build-apk.yml
+@@ -35,8 +35,30 @@ jobs:
+           gradle-version: '8.13'
+           cache-provider: basic
+ 
++      - name: Restore stable signing key
++        env:
++          KEYSTORE_B64: ${{ secrets.MINDTRACK_KEYSTORE_B64 }}
++        run: |
++          if [ -z "$KEYSTORE_B64" ]; then
++            echo "MINDTRACK_KEYSTORE_B64 secret is missing." >&2
++            echo "Run scripts/setup-github-signing.sh once in the Codespace." >&2
++            exit 1
++          fi
++          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/mindtrack-signing.jks"
++
+       - name: Build debug APK
+-        run: gradle --no-daemon :app:assembleDebug
++        env:
++          MINDTRACK_KEYSTORE_PATH: ${{ runner.temp }}/mindtrack-signing.jks
++          MINDTRACK_KEYSTORE_PASSWORD: ${{ secrets.MINDTRACK_KEYSTORE_PASSWORD }}
++        run: |
++          if [ -z "$MINDTRACK_KEYSTORE_PASSWORD" ]; then
++            echo "MINDTRACK_KEYSTORE_PASSWORD secret is missing." >&2
++            exit 1
++          fi
++          gradle --no-daemon :app:assembleDebug
++
++      - name: Verify APK signature
++        run: apksigner verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
+ 
+       - name: Upload APK
+         uses: actions/upload-artifact@v7
+diff --git a/.gitignore b/.gitignore
+index 66541fa..5c66cc9 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -11,3 +11,7 @@
+ .externalNativeBuild
+ .cxx
+ app/build
++
++# MindTrack development signing backups - NEVER COMMIT
++.mindtrack-signing.jks
++.mindtrack-signing-credentials.txt
+diff --git a/BUILD_APK.md b/BUILD_APK.md
+index 7eb94c2..abc4e9a 100644
+--- a/BUILD_APK.md
++++ b/BUILD_APK.md
+@@ -12,3 +12,24 @@ Sie baut automatisch eine Debug-APK und lädt sie als Artifact `MindTrack-debug-
+ 5. Darin liegt `app-debug.apk`.
+ 
+ Die APK ist eine Debug-APK und damit direkt zum Testen geeignet, aber nicht für den Play Store signiert.
++
++## Feste Signatur für Updates (ab 0.3.3)
++
++Vor dem ersten 0.3.3-Build einmal im Codespace:
++
++```bash
++./scripts/setup-github-signing.sh
++```
++
++Das Skript erzeugt einen dauerhaften Entwicklungsschlüssel und legt ihn als GitHub Actions Secrets ab. Lade danach `.mindtrack-signing.jks` und `.mindtrack-signing-credentials.txt` aus dem Codespace herunter und sichere beide Dateien außerhalb des Repositories.
++
++Danach:
++
++```bash
++git add .
++git commit -m "Use stable signing for APK updates"
++git push
++gh run watch
++```
++
++Ab diesem Build müssen spätere APKs mit demselben Schlüssel gebaut werden, damit Android sie als Update akzeptiert.
+diff --git a/README.md b/README.md
+index 7dc6a71..820fae9 100644
+--- a/README.md
++++ b/README.md
+@@ -140,3 +140,17 @@ Quick Capture is designed for lock-screen use and does not expose history, old n
+ - Neues adaptives Batterie-App-Icon inklusive Android-13-Monochrom-Variante.
+ - Bottom-Navigation sitzt jetzt bündig am unteren Systemrand; das doppelte Navigation-Bar-Inset wurde entfernt.
+ - Dezente Trennlinie und ruhige Surface-Farbe für klarere Abgrenzung zum Inhalt.
++
++## 0.3.3 – stabile APK-Signatur
++
++GitHub Actions verwendet jetzt einen dauerhaft gespeicherten MindTrack-Entwicklungsschlüssel statt des jeweils neu erzeugten Runner-Debug-Schlüssels. Dadurch lassen sich künftige APKs als normales Update über die bestehende Installation installieren.
++
++Einmalig im Codespace ausführen:
++
++```bash
++./scripts/setup-github-signing.sh
++```
++
++Danach die erzeugten Dateien `.mindtrack-signing.jks` und `.mindtrack-signing-credentials.txt` **außerhalb von GitHub sicher sichern**. Sie werden nicht committed.
++
++**Einmaliger Übergang:** APKs bis einschließlich 0.3.2 wurden mit flüchtigen Debug-Schlüsseln gebaut. Daher muss die bereits installierte alte Test-App einmal deinstalliert werden, bevor der erste stabil signierte Build (0.3.3) installiert werden kann. Dabei gehen die lokalen Testdaten dieser Installation verloren.
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 0936b76..2c90ea5 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -11,6 +11,10 @@ kotlin {
+     }
+ }
+ 
++val mindTrackKeystorePath = System.getenv("MINDTRACK_KEYSTORE_PATH")
++val mindTrackKeystorePassword = System.getenv("MINDTRACK_KEYSTORE_PASSWORD")
++val hasMindTrackSigning = !mindTrackKeystorePath.isNullOrBlank() && !mindTrackKeystorePassword.isNullOrBlank()
++
+ android {
+     namespace = "de.mindtrack.app"
+     compileSdk = 36
+@@ -19,13 +23,28 @@ android {
+         applicationId = "de.mindtrack.app"
+         minSdk = 26
+         targetSdk = 36
+-        versionCode = 5
+-        versionName = "0.3.2"
++        versionCode = 6
++        versionName = "0.3.3"
++    }
++
++    signingConfigs {
++        if (hasMindTrackSigning) {
++            create("mindtrack") {
++                storeFile = file(requireNotNull(mindTrackKeystorePath))
++                storePassword = requireNotNull(mindTrackKeystorePassword)
++                keyAlias = "mindtrack"
++                keyPassword = requireNotNull(mindTrackKeystorePassword)
++            }
++        }
+     }
+ 
+     buildTypes {
++        debug {
++            signingConfigs.findByName("mindtrack")?.let { signingConfig = it }
++        }
+         release {
+             isMinifyEnabled = false
++            signingConfigs.findByName("mindtrack")?.let { signingConfig = it }
+             proguardFiles(
+                 getDefaultProguardFile("proguard-android-optimize.txt"),
+                 "proguard-rules.pro"
+diff --git a/scripts/setup-github-signing.sh b/scripts/setup-github-signing.sh
+new file mode 100755
+index 0000000..045a4fa
+--- /dev/null
++++ b/scripts/setup-github-signing.sh
+@@ -0,0 +1,65 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++for cmd in gh keytool openssl base64; do
++  command -v "$cmd" >/dev/null || { echo "Fehlt: $cmd" >&2; exit 1; }
++done
++
++gh auth status >/dev/null
++
++KEYSTORE="$PWD/.mindtrack-signing.jks"
++CREDENTIALS="$PWD/.mindtrack-signing-credentials.txt"
++
++if [[ -e "$KEYSTORE" || -e "$CREDENTIALS" ]]; then
++  echo "Abbruch: Signing-Backup existiert bereits:" >&2
++  echo "  $KEYSTORE" >&2
++  echo "  $CREDENTIALS" >&2
++  echo "Bitte zuerst sichern/umbenennen, damit kein Schlüssel überschrieben wird." >&2
++  exit 1
++fi
++
++PASSWORD="$(openssl rand -hex 24)"
++
++keytool -genkeypair \
++  -keystore "$KEYSTORE" \
++  -storetype JKS \
++  -storepass "$PASSWORD" \
++  -keypass "$PASSWORD" \
++  -alias mindtrack \
++  -keyalg RSA \
++  -keysize 2048 \
++  -validity 10000 \
++  -dname "CN=MindTrack Development, OU=Development, O=MindTrack, L=Local, ST=Local, C=DE" \
++  >/dev/null
++
++if base64 --help 2>&1 | grep -q -- '-w'; then
++  KEYSTORE_B64="$(base64 -w0 "$KEYSTORE")"
++else
++  KEYSTORE_B64="$(base64 "$KEYSTORE" | tr -d '\n')"
++fi
++
++printf '%s' "$KEYSTORE_B64" | gh secret set MINDTRACK_KEYSTORE_B64
++printf '%s' "$PASSWORD" | gh secret set MINDTRACK_KEYSTORE_PASSWORD
++
++cat > "$CREDENTIALS" <<CREDS
++MindTrack development signing key
++Alias: mindtrack
++Keystore password: $PASSWORD
++Key password: $PASSWORD
++Created: $(date -u +%Y-%m-%dT%H:%M:%SZ)
++CREDS
++chmod 600 "$KEYSTORE" "$CREDENTIALS"
++
++cat <<MSG
++
++Feste MindTrack-Signatur ist eingerichtet.
++
++WICHTIG: Lade diese beiden Dateien aus dem Codespace herunter und bewahre sie sicher auf:
++  $KEYSTORE
++  $CREDENTIALS
++
++Sie sind absichtlich per .gitignore vom Repository ausgeschlossen.
++Wenn du den Keystore verlierst, kannst du bereits installierte Builds später nicht mehr normal aktualisieren.
++
++Jetzt committe/pushe den 0.3.3-Patch und starte den Build erneut.
++MSG
